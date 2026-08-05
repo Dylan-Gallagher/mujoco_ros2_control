@@ -40,11 +40,13 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <mujoco_ros2_control_msgs/msg/free_joint_state.hpp>
+#include <mujoco_ros2_control_msgs/msg/simulation_state.hpp>
 #include <mujoco_ros2_control_msgs/srv/reset_world.hpp>
 #include <mujoco_ros2_control_msgs/srv/set_free_joint_state.hpp>
 #include <mujoco_ros2_control_msgs/srv/set_pause.hpp>
 #include <mujoco_ros2_control_msgs/srv/step_simulation.hpp>
 #include <mujoco_ros2_control_plugins/mujoco_ros2_control_plugins_base.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 
 namespace mujoco_ros2_control
 {
@@ -178,15 +180,20 @@ public:
   }
 
   /**
-   * @brief Reset simulation state (qpos/qvel/ctrl/sensors/forces) to the captured initial state.
+   * @brief Reset simulation state (qpos/qvel/ctrl/sensors/forces) to the captured initial state,
+   * optionally applying joint state overrides on top of the restored state.
+   *
+   * Overrides are assumed to have been validated by the caller, so they cannot fail here
+   * (see `validate_joint_state_overrides` / `validate_free_joint_states`).
+   *
    * @note Caller must hold the sim mutex.
    */
-  void reset_world_state(bool fill_initial_state);
+  void reset_world_state(bool fill_initial_state, const mujoco_ros2_control_msgs::msg::SimulationState& state_overrides);
 
   /**
    * @brief Sets the pose and velocity of one or more free-joint objects, identified by body name.
    *
-   * Applied atomically: every entry is resolved before anything is written, so a single invalid
+   * Applied atomically: every entry is validated before anything is written, so a single invalid
    * entry leaves the sim state unchanged. Duplicate body names are applied in order, so the last
    * one wins. See `FreeJointState.msg` for per-entry fields.
    *
@@ -337,19 +344,6 @@ private:
   void update_sim_display();
 
   /**
-   * @brief A `FreeJointState` entry fully resolved to world-frame values, ready to write.
-   */
-  struct FreeJointWrite
-  {
-    int qpos_adr{ -1 };
-    int qvel_adr{ -1 };
-    mjtNum world_pos[3];
-    mjtNum world_quat[4];
-    mjtNum world_linvel[3];
-    mjtNum world_angvel[3];
-  };
-
-  /**
    * @brief Resolves `frame_id` to a body id: empty means the world frame (`body_id = -1`),
    * otherwise it must name a known MuJoCo body.
    *
@@ -360,18 +354,50 @@ private:
                         std::string& error_message);
 
   /**
-   * @brief Resolves a `FreeJointState` entry into a `FreeJointWrite`, without touching
-   * `mj_data_`.
-   *
-   * `pose` and `twist` resolve their own `header.frame_id` independently -- they may reference
-   * different bodies, or one may stay in the world frame while the other is relative.
+   * @brief Returns the id of the free joint driving `body_id`, or -1 if there is none.
+   */
+  int find_free_joint_id(int body_id) const;
+
+  /**
+   * @brief Validates a list of `FreeJointState` entries against the model, without touching
+   * `mj_data_`: every entry must name a body driven by a free joint, and both `header.frame_id`s
+   * must be empty (world frame) or name a known body.
    *
    * @note Caller must hold the sim mutex.
-   * @return true if the body, its free joint, and both frame_ids were resolved; false
-   * otherwise, with `error_message` set.
+   * @return true if every entry is valid; false otherwise, with `error_message` set.
    */
-  bool resolve_free_joint_write(const mujoco_ros2_control_msgs::msg::FreeJointState& state, FreeJointWrite& out,
-                                std::string& error_message);
+  bool validate_free_joint_states(const std::vector<mujoco_ros2_control_msgs::msg::FreeJointState>& free_joints,
+                                  std::string& error_message);
+
+  /**
+   * @brief Writes free-joint states into `mj_data_->qpos`/`qvel`, resolving each entry's `pose`
+   * and `twist` against their own `header.frame_id` -- they may reference different bodies, or
+   * vary between world vs. relative frame to another body.
+   * Does not refresh snapshots or run forward dynamics; the caller is responsible for both.
+   *
+   * @note Caller must hold the sim mutex and have validated `free_joints` first.
+   */
+  void apply_free_joint_states(const std::vector<mujoco_ros2_control_msgs::msg::FreeJointState>& free_joints);
+
+  /**
+   * @brief Validates a `JointState` message against the model, without touching `mj_data_`.
+   *
+   * Every named joint must be a single-DOF (hinge or slide) MuJoCo joint, and `position` /
+   * `velocity` must each be empty or the same length as `name`. `effort` is not supported and
+   * must be empty.
+   *
+   * @note Caller must hold the sim mutex.
+   * @return true if the message is valid; false otherwise, with `error_message` set.
+   */
+  bool validate_joint_state_overrides(const sensor_msgs::msg::JointState& joint_state, std::string& error_message);
+
+  /**
+   * @brief Writes single-DOF joint states into `mj_data_->qpos`/`qvel`.
+   * Does not refresh snapshots or run forward dynamics; the caller is responsible for both.
+   *
+   * @note Caller must hold the sim mutex and have validated `joint_state` first.
+   */
+  void apply_joint_state_overrides(const sensor_msgs::msg::JointState& joint_state);
 
   // Service callbacks
   void reset_world_callback(const std::shared_ptr<mujoco_ros2_control_msgs::srv::ResetWorld::Request> request,
