@@ -1300,20 +1300,14 @@ bool MujocoSystemInterface::register_mujoco_actuators()
       return std::isfinite(gains.p_gain_) && std::isfinite(gains.i_gain_) && std::isfinite(gains.d_gain_);
     };
 
-    if (actuator_data.actuator_type == ActuatorType::POSITION)
-    {
-      actuator_data.is_position_control_enabled = true;
-    }
-    else if (actuator_data.actuator_type == ActuatorType::VELOCITY)
+    if (actuator_data.actuator_type == ActuatorType::VELOCITY)
     {
       actuator_data.has_pos_pid = initialize_position_pids();
-      actuator_data.is_velocity_control_enabled = true;
     }
     else if (actuator_data.actuator_type == ActuatorType::MOTOR || actuator_data.actuator_type == ActuatorType::CUSTOM)
     {
       actuator_data.has_pos_pid = initialize_position_pids();
       actuator_data.has_vel_pid = initialize_velocity_pids();
-      actuator_data.is_effort_control_enabled = true;
     }
     RCLCPP_DEBUG(get_logger(), "Successfully registered actuator '%s'", act_name);
   }
@@ -1589,10 +1583,8 @@ void MujocoSystemInterface::register_urdf_joints(const hardware_interface::Hardw
             }
             else
             {
-              RCLCPP_ERROR(get_logger(),
-                           "Position command interface for the joint : %s is not supported with velocity or motor "
-                           "actuator without defining the PIDs",
-                           actuator_name.c_str());
+              throw std::runtime_error("Position command interface for the joint : " + actuator_name +
+                                       " is not supported with motor or custom actuator without defining the PIDs");
             }
           }
         }
@@ -1630,11 +1622,8 @@ void MujocoSystemInterface::register_urdf_joints(const hardware_interface::Hardw
             }
             else
             {
-              RCLCPP_ERROR(
-                  get_logger(),
-                  "Velocity command interface for the joint : %s is not supported with motor or custom actuator "
-                  "without defining the PIDs",
-                  actuator_name.c_str());
+              throw std::runtime_error("Velocity command interface for the joint : " + actuator_name +
+                                       " is not supported with motor or custom actuator without defining the PIDs");
             }
           }
         }
