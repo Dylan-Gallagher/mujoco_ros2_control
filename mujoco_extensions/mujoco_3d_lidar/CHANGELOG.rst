@@ -2,8 +2,8 @@
 Changelog for package mujoco_3d_lidar
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-08-18)
+------------------
 * Make CI tests more robust (`#239 <https://github.com/ros-controls/mujoco_ros2_control/issues/239>`_)
   * Protect lidar timestamps from uninitialized plugin data
   * Different software and llvmpipe for tests

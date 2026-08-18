@@ -2,8 +2,8 @@
 Changelog for package mujoco_ros2_control
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-08-18)
+------------------
 * Add a pre-step callback to the simulation (`#282 <https://github.com/ros-controls/mujoco_ros2_control/issues/282>`_)
   Co-authored-by: Sai Kishor Kothakota <sai.kishor@pal-robotics.com>
 * Fix control mode selection (`#281 <https://github.com/ros-controls/mujoco_ros2_control/issues/281>`_)

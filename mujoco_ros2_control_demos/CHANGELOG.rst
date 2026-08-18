@@ -2,8 +2,8 @@
 Changelog for package mujoco_ros2_control_demos
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-08-18)
+------------------
 * Add base twist plugin for commanding the mobile base (`#254 <https://github.com/ros-controls/mujoco_ros2_control/issues/254>`_)
 * Add support for Magnetometer sensor (`#257 <https://github.com/ros-controls/mujoco_ros2_control/issues/257>`_)
 * Add missing dependencies (`#250 <https://github.com/ros-controls/mujoco_ros2_control/issues/250>`_)
