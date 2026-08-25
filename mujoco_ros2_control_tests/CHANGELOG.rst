@@ -2,8 +2,8 @@
 Changelog for package mujoco_ros2_control_tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2026-08-25)
+------------------
 * Fix compilation on MuJoCo 3.12.0 (`#290 <https://github.com/pal-robotics-forks/mujoco_ros2_control/issues/290>`_)
 * Fix the generate changelog of 0.1.0 (`#288 <https://github.com/pal-robotics-forks/mujoco_ros2_control/issues/288>`_)
 * Contributors: Sai Kishor Kothakota
