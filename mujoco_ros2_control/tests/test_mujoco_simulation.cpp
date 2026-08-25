@@ -19,6 +19,7 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <filesystem>
@@ -32,6 +33,8 @@
 #include <mujoco_ros2_control_msgs/msg/free_joint_state.hpp>
 #include <mujoco_ros2_control_msgs/srv/reset_world.hpp>
 #include <mujoco_ros2_control_msgs/srv/set_free_joint_state.hpp>
+
+#include "render_loop_exit.hpp"
 
 namespace
 {
@@ -80,6 +83,35 @@ void write_test_model()
 
 constexpr double TEST_TOLERANCE = 1e-9;
 }  // namespace
+
+TEST(RenderLoopExitHandler, RequestsSimulationExitAndShutsOwningContext)
+{
+  auto context = std::make_shared<rclcpp::Context>();
+  context->init(0, nullptr);
+  std::atomic<int> exit_request{ 1 };
+  std::atomic<bool> explicit_shutdown_requested{ false };
+
+  ASSERT_TRUE(rclcpp::ok(context));
+  EXPECT_TRUE(mujoco_ros2_control::detail::handle_render_loop_exit(exit_request, explicit_shutdown_requested, context));
+
+  EXPECT_EQ(exit_request.load(), 1);
+  EXPECT_FALSE(rclcpp::ok(context));
+}
+
+TEST(RenderLoopExitHandler, PreservesContextAfterExplicitShutdown)
+{
+  auto context = std::make_shared<rclcpp::Context>();
+  context->init(0, nullptr);
+  std::atomic<int> exit_request{ 1 };
+  std::atomic<bool> explicit_shutdown_requested{ true };
+
+  ASSERT_TRUE(rclcpp::ok(context));
+  EXPECT_FALSE(mujoco_ros2_control::detail::handle_render_loop_exit(exit_request, explicit_shutdown_requested, context));
+
+  EXPECT_EQ(exit_request.load(), 1);
+  EXPECT_TRUE(rclcpp::ok(context));
+  context->shutdown("test cleanup");
+}
 
 class MujocoSimulationTest : public ::testing::Test
 {

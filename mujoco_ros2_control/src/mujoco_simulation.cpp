@@ -20,6 +20,7 @@
 #include "mujoco_ros2_control/mujoco_simulation.hpp"
 #include "array_safety.h"
 #include "mujoco_ros2_control/sim_display_text.hpp"
+#include "render_loop_exit.hpp"
 
 #include <unistd.h>
 #include <cerrno>
@@ -528,6 +529,7 @@ MujocoSimulation::~MujocoSimulation()
 bool MujocoSimulation::initialize(rclcpp::Node::SharedPtr node, const std::string& model_path,
                                   const std::string& mujoco_model_topic, double sim_speed_factor, bool headless)
 {
+  explicit_shutdown_requested_.store(false);
   node_ = node;
   model_path_ = model_path;
   mujoco_model_topic_ = mujoco_model_topic;
@@ -623,6 +625,12 @@ bool MujocoSimulation::initialize(rclcpp::Node::SharedPtr node, const std::strin
       // Blocks until terminated
       RCLCPP_INFO(get_logger(), "Starting the MuJoCo rendering thread...");
       sim_->RenderLoop();
+
+      if (detail::handle_render_loop_exit(sim_->exitrequest, explicit_shutdown_requested_,
+                                          node_->get_node_base_interface()->get_context()))
+      {
+        RCLCPP_INFO(get_logger(), "MuJoCo rendering window closed; shut down its ROS context.");
+      }
     });
   }
 
@@ -812,6 +820,8 @@ void MujocoSimulation::start_physics_thread()
 
 void MujocoSimulation::shutdown()
 {
+  explicit_shutdown_requested_.store(true);
+
   // If sim_ is created and running, clean shut it down
   if (sim_)
   {
