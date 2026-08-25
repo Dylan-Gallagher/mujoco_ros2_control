@@ -2,6 +2,12 @@
 Changelog for package mujoco_ros2_control_tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-08-25)
+------------------
+* Fix compilation on MuJoCo 3.12.0 (`#290 <https://github.com/pal-robotics-forks/mujoco_ros2_control/issues/290>`_)
+* Fix the generate changelog of 0.1.0 (`#288 <https://github.com/pal-robotics-forks/mujoco_ros2_control/issues/288>`_)
+* Contributors: Sai Kishor Kothakota
+
 0.1.0 (2026-08-18)
 ------------------
 * Add support for Magnetometer sensor (`#257 <https://github.com/ros-controls/mujoco_ros2_control/issues/257>`_)
